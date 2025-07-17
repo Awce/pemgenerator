@@ -7,6 +7,8 @@ const { exec } = require("child_process");
 const app = express();
 const port = 3000;
 
+app.use(express.json({ limit: "10mb" }));
+
 // Configuración de almacenamiento de multer
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -22,6 +24,13 @@ const upload = multer({ storage });
 // Crear la carpeta 'uploads' si no existe
 if (!fs.existsSync("uploads")) {
   fs.mkdirSync("uploads");
+}
+
+// Función auxiliar para eliminar archivos si existen
+function safeDelete(filePath) {
+  if (fs.existsSync(filePath)) {
+    fs.unlinkSync(filePath);
+  }
 }
 
 // Ruta para servir el archivo HTML
@@ -44,6 +53,9 @@ app.post(
       const convertCertCommand = `openssl x509 -inform DER -in "${cerFilePath}" -out "${certPEMPath}"`;
 
       exec(convertCertCommand, (err) => {
+
+        safeDelete(cerFilePath);
+
         if (err) {
           console.error(`Error al convertir el certificado: ${err.message}`);
           return res
@@ -51,6 +63,7 @@ app.post(
             .send("Error al convertir el archivo .cer a .pem.");
         }
         const certPEM = fs.readFileSync(certPEMPath, "utf8");
+        safeDelete(certPEMPath);
         res.send(`${certPEM}`);
       });
     } else if (conversionType === "key") {
@@ -71,6 +84,7 @@ app.post(
             );
         }
         const keyPEM = fs.readFileSync(keyPEMPath, "utf8");
+        safeDelete(keyPEMPath);
         res.send(`${keyPEM}`);
       });
     } else {
@@ -78,6 +92,38 @@ app.post(
     }
   }
 );
+
+// ruta para manejar peticiones del generador
+app.post("/generate", async (req, res) => {
+  try {
+    const { cerBase64, keyBase64, password } = req.body;
+
+    const tempDir = "./temp";
+    if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir);
+
+    const cerPath = path.join(tempDir, "cert.cer");
+    const keyPath = path.join(tempDir, "private.key");
+    const pemPath = path.join(tempDir, "final.pem");
+
+    fs.writeFileSync(cerPath, Buffer.from(cerBase64, "base64"));
+    fs.writeFileSync(keyPath, Buffer.from(keyBase64, "base64"));
+
+    const command = `openssl pkcs8 -inform DER -in ${keyPath} -passin pass:${password} -out temp/decrypted.key && openssl x509 -inform DER -in ${cerPath} -out temp/cert.pem && cat temp/cert.pem temp/decrypted.key > ${pemPath}`;
+
+    exec(command, (error) => {
+      if (error) {
+        console.error("Error al generar PEM:", error);
+        return res.status(500).json({ error: "Error al generar PEM" });
+      }
+
+      const pemContent = fs.readFileSync(pemPath, "utf8");
+      return res.json({ pem: pemContent });
+    });
+  } catch (err) {
+    console.error("Error general:", err);
+    res.status(500).json({ error: "Error en el servidor" });
+  }
+});
 
 // Iniciar el servidor
 app.listen(port, () => {
