@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cargar archivos .cer y .key</title>
+  </head>
+  <body>
+    <h2>Cargar archivos para convertir a PEM</h2>
+    <form
+      id="uploadForm"
+      enctype="multipart/form-data"
+      method="POST"
+      action="/upload"
+    >
+      <label for="conversionType">Selecciona el tipo de conversión:</label>
+      <select id="conversionType" name="conversionType" required>
+        <option value="cer">Convertir .cer a .pem</option>
+        <option value="key">Convertir .key a .pem</option>
+      </select>
+      <br /><br />
+      <div id="cerFileDiv">
+        <label for="cerFile">Selecciona el archivo .cer:</label>
+        <input type="file" id="cerFile" name="cerFile" accept=".cer" />
+      </div>
+      <br />
+      <div id="keyFileDiv" style="display: none">
+        <label for="keyFile">Selecciona el archivo .key:</label>
+        <input type="file" id="keyFile" name="keyFile" accept=".key" />
+        <br /><br />
+        <label for="password">Contraseña del archivo .key (si aplica):</label>
+        <input type="password" id="password" name="password" />
+      </div>
+      <br />
+      <button type="submit">Convertir a PEM</button>
+    </form>
+
+    <div id="result"></div>
+
+    <script>
+      // Mostrar u ocultar campos según el tipo de conversión seleccionado
+      const conversionType = document.getElementById("conversionType");
+      const cerFileDiv = document.getElementById("cerFileDiv");
+      const keyFileDiv = document.getElementById("keyFileDiv");
+
+      conversionType.addEventListener("change", () => {
+        if (conversionType.value === "cer") {
+          cerFileDiv.style.display = "block";
+          keyFileDiv.style.display = "none";
+        } else {
+          cerFileDiv.style.display = "none";
+          keyFileDiv.style.display = "block";
+        }
+      });
+
+      // Manejar la respuesta del servidor
+      const form = document.getElementById("uploadForm");
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const formData = new FormData(form);
+
+        const response = await fetch("/upload", {
+          method: "POST",
+          body: formData,
+        });
+
+        const result = await response.text();
+        document.getElementById("result").textContent = result;
+      });
+    </script>
+  </body>
+</html>

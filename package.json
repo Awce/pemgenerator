@@ -1,0 +1,16 @@
+{
+  "name": "pemgenerator",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "devDependencies": {
+    "crypto": "^1.0.1",
+    "fs": "^0.0.1-security",
+    "install": "^0.13.0",
+    "npm": "^10.9.0"
+  },
+  "dependencies": {
+    "express": "^4.21.1",
+    "multer": "^1.4.5-lts.1"
+  }
+}
