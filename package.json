@@ -3,10 +3,14 @@
   "version": "1.0.0",
   "main": "index.js",
   "license": "MIT",
+  "scripts": {
+    "dev": "nodemon server.js"
+  },
   "devDependencies": {
     "crypto": "^1.0.1",
     "fs": "^0.0.1-security",
     "install": "^0.13.0",
+    "nodemon": "^3.1.10",
     "npm": "^10.9.0"
   },
   "dependencies": {

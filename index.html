@@ -1,72 +1,147 @@
 <!DOCTYPE html>
 <html lang="es">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Cargar archivos .cer y .key</title>
-  </head>
-  <body>
-    <h2>Cargar archivos para convertir a PEM</h2>
-    <form
-      id="uploadForm"
-      enctype="multipart/form-data"
-      method="POST"
-      action="/upload"
-    >
-      <label for="conversionType">Selecciona el tipo de conversión:</label>
-      <select id="conversionType" name="conversionType" required>
-        <option value="cer">Convertir .cer a .pem</option>
-        <option value="key">Convertir .key a .pem</option>
-      </select>
-      <br /><br />
-      <div id="cerFileDiv">
-        <label for="cerFile">Selecciona el archivo .cer:</label>
-        <input type="file" id="cerFile" name="cerFile" accept=".cer" />
-      </div>
-      <br />
-      <div id="keyFileDiv" style="display: none">
-        <label for="keyFile">Selecciona el archivo .key:</label>
-        <input type="file" id="keyFile" name="keyFile" accept=".key" />
-        <br /><br />
-        <label for="password">Contraseña del archivo .key (si aplica):</label>
-        <input type="password" id="password" name="password" />
-      </div>
-      <br />
-      <button type="submit">Convertir a PEM</button>
-    </form>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cargar archivos .cer y .key</title>
+  <style>
 
-    <div id="result"></div>
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 1rem;
+    }
 
-    <script>
-      // Mostrar u ocultar campos según el tipo de conversión seleccionado
-      const conversionType = document.getElementById("conversionType");
-      const cerFileDiv = document.getElementById("cerFileDiv");
-      const keyFileDiv = document.getElementById("keyFileDiv");
+    form {
+      background: #fff;
+      padding: 1rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      display: inline-block;
+    }
 
-      conversionType.addEventListener("change", () => {
-        if (conversionType.value === "cer") {
-          cerFileDiv.style.display = "block";
-          keyFileDiv.style.display = "none";
-        } else {
-          cerFileDiv.style.display = "none";
-          keyFileDiv.style.display = "block";
-        }
-      });
+    input[type="file"] {
+      margin: 1rem 0;
+    }
 
-      // Manejar la respuesta del servidor
-      const form = document.getElementById("uploadForm");
-      form.addEventListener("submit", async (event) => {
-        event.preventDefault();
-        const formData = new FormData(form);
+    button {
+      background: #007bff;
+      color: white;
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
 
-        const response = await fetch("/upload", {
-          method: "POST",
-          body: formData,
-        });
+    button:hover {
+      background: #0056b3;
+    }
+    /* */
+    #resultContainer {
+      margin-top: 20px;
+      display: none;
+    }
+    #resultText {
+      width: 100%;
+      height: 300px;
+      font-family: monospace;
+      white-space: pre-wrap;
+      padding: 10px;
+    }
+    #copyButton {
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+<h2>Cargar archivos para convertir a PEM</h2>
+<form
+        id="uploadForm"
+        enctype="multipart/form-data"
+        method="POST"
+        action="/upload"
+>
+  <label for="conversionType">Selecciona el tipo de conversión:</label>
+  <select id="conversionType" name="conversionType" required>
+    <option value="cer">Convertir .cer a .pem</option>
+    <option value="key">Convertir .key a .pem</option>
+  </select>
+  <br /><br />
+  <div id="cerFileDiv">
+    <label for="cerFile">Selecciona el archivo .cer:</label>
+    <input type="file" id="cerFile" name="cerFile" accept=".cer" />
+  </div>
+  <br />
+  <div id="keyFileDiv" style="display: none">
+    <label for="keyFile">Selecciona el archivo .key:</label>
+    <input type="file" id="keyFile" name="keyFile" accept=".key" />
+    <br /><br />
+    <label for="password">Contraseña del archivo .key (si aplica):</label>
+    <input type="password" id="password" name="password" />
+  </div>
+  <br />
+  <button type="submit">Convertir a PEM</button>
+</form>
 
-        const result = await response.text();
-        document.getElementById("result").textContent = result;
-      });
-    </script>
-  </body>
+<!-- Resultado -->
+<div id="resultContainer">
+  <h3>Resultado PEM:</h3>
+  <textarea id="resultText" readonly></textarea><br />
+  <button id="copyButton">Copiar al portapapeles</button>
+  <span id="copyStatus" style="margin-left: 10px;"></span>
+</div>
+
+<script>
+  // Mostrar u ocultar campos según el tipo de conversión
+  const conversionType = document.getElementById("conversionType");
+  const cerFileDiv = document.getElementById("cerFileDiv");
+  const keyFileDiv = document.getElementById("keyFileDiv");
+
+  conversionType.addEventListener("change", () => {
+    if (conversionType.value === "cer") {
+      cerFileDiv.style.display = "block";
+      keyFileDiv.style.display = "none";
+    } else {
+      cerFileDiv.style.display = "none";
+      keyFileDiv.style.display = "block";
+    }
+  });
+
+  // Enviar formulario y mostrar resultado
+  const form = document.getElementById("uploadForm");
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const formData = new FormData(form);
+
+    const response = await fetch("/upload", {
+      method: "POST",
+      body: formData,
+    });
+
+    const resultText = await response.text();
+    const resultContainer = document.getElementById("resultContainer");
+    const resultTextarea = document.getElementById("resultText");
+
+    resultTextarea.value = resultText;
+    resultContainer.style.display = "block";
+  });
+
+  // Copiar al portapapeles
+  const copyButton = document.getElementById("copyButton");
+  const resultTextarea = document.getElementById("resultText");
+  const copyStatus = document.getElementById("copyStatus");
+
+  copyButton.addEventListener("click", () => {
+    navigator.clipboard
+            .writeText(resultTextarea.value)
+            .then(() => {
+              copyStatus.textContent = "✅ Copiado";
+              setTimeout(() => (copyStatus.textContent = ""), 2000);
+            })
+            .catch(() => {
+              copyStatus.textContent = "❌ Error al copiar";
+            });
+  });
+</script>
+</body>
 </html>
+
